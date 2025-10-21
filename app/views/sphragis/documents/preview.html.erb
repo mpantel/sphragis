@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PDF Signature Preview</title>
+  <%= stylesheet_link_tag "sphragis/application", media: "all" %>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 300px;
+      background: #f5f5f5;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #ddd;
+    }
+
+    .pdf-viewer {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+      background: #525659;
+    }
+
+    #pdf-canvas {
+      display: block;
+      margin: 20px auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .signature-box {
+      position: absolute;
+      border: 2px dashed #ff6b6b;
+      background: rgba(255, 107, 107, 0.1);
+      cursor: move;
+      z-index: 10;
+    }
+
+    .signature-box-label {
+      background: #ff6b6b;
+      color: white;
+      padding: 2px 8px;
+      font-size: 12px;
+      position: absolute;
+      top: -20px;
+      left: 0;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #45a049;
+    }
+
+    .btn-secondary {
+      background: #2196F3;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #0b7dda;
+    }
+
+    .info-section {
+      background: white;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+
+    .info-section h3 {
+      margin-top: 0;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .info-item {
+      font-size: 13px;
+      margin: 5px 0;
+      color: #666;
+    }
+
+    .page-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .page-controls button {
+      padding: 5px 15px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .page-controls button:hover {
+      background: #f0f0f0;
+    }
+
+    .page-controls span {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h2 style="margin-top: 0;">Signature Settings</h2>
+
+      <div class="info-section">
+        <h3>Document Info</h3>
+        <div class="info-item">Pages: <%= @pdf_info[:page_count] %></div>
+        <div class="info-item">Version: <%= @pdf_info[:pdf_version] %></div>
+      </div>
+
+      <form id="signature-form">
+        <div class="form-group">
+          <label for="provider-select">Signature Provider:</label>
+          <select id="provider-select" name="provider">
+            <% @available_providers.each do |provider| %>
+              <option value="<%= provider %>" <%= "selected" if provider == @selected_provider %>>
+                <%= provider.to_s.capitalize %>
+              </option>
+            <% end %>
+          </select>
+          <small style="display: block; margin-top: 5px; color: #666; font-size: 12px;">
+            <%= @available_providers.length %> provider<%= @available_providers.length > 1 ? 's' : '' %> available
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="page-select">Sign on Page:</label>
+          <select id="page-select" name="page">
+            <% @pdf_info[:page_count].times do |i| %>
+              <option value="<%= i + 1 %>" <%= "selected" if i + 1 == (@signature_options[:page] || @pdf_info[:page_count]) %>>
+                Page <%= i + 1 %>
+              </option>
+            <% end %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="x-position">X Position:</label>
+          <input type="number" id="x-position" name="x" value="<%= @signature_options[:x] %>">
+        </div>
+
+        <div class="form-group">
+          <label for="y-position">Y Position:</label>
+          <input type="number" id="y-position" name="y" value="<%= @signature_options[:y] %>">
+        </div>
+
+        <div class="form-group">
+          <label for="width">Width:</label>
+          <input type="number" id="width" name="width" value="<%= @signature_options[:width] %>">
+        </div>
+
+        <div class="form-group">
+          <label for="height">Height:</label>
+          <input type="number" id="height" name="height" value="<%= @signature_options[:height] %>">
+        </div>
+
+        <div class="form-group">
+          <label for="reason">Reason for Signing:</label>
+          <input type="text" id="reason" name="reason" value="Document approval" placeholder="e.g., Document approval">
+        </div>
+
+        <div class="form-group">
+          <label for="location">Location:</label>
+          <input type="text" id="location" name="location" placeholder="e.g., Athens, Greece">
+        </div>
+
+        <button type="button" class="btn btn-secondary" id="update-preview-btn">Update Preview</button>
+        <button type="submit" class="btn btn-primary" id="sign-btn">Sign Document</button>
+      </form>
+
+      <div id="status-message" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+    </div>
+
+    <div class="pdf-viewer" id="pdf-viewer">
+      <div class="page-controls">
+        <button id="prev-page">Previous</button>
+        <span id="page-info">Page <span id="current-page">1</span> of <span id="total-pages"><%= @pdf_info[:page_count] %></span></span>
+        <button id="next-page">Next</button>
+      </div>
+      <canvas id="pdf-canvas"></canvas>
+      <div id="signature-box" class="signature-box">
+        <div class="signature-box-label">Signature</div>
+      </div>
+    </div>
+  </div>
+
+  <%= javascript_include_tag "sphragis/application" %>
+  <script>
+    const pdfPath = '<%= j @document_path %>';
+    const signatureOptions = <%= raw @signature_options.to_json %>;
+  </script>
+</body>
+</html>

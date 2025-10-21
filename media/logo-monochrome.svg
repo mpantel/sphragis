@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Monochrome/Print version - black and white only -->
+  <!-- Fonts: Georgia (system serif font, free with all operating systems) -->
+
+  <defs>
+    <!-- Text path for curved text -->
+    <path id="textPath" d="M 256,470 A 214,214 0 0,1 256,470 A 214,214 0 1,1 256,470" fill="none"/>
+  </defs>
+
+  <!-- Simple outer circle -->
+  <circle cx="256" cy="256" r="240" fill="#FFFFFF" stroke="#000000" stroke-width="4"/>
+
+  <!-- Inner circle -->
+  <circle cx="256" cy="256" r="190" fill="#000000"/>
+
+  <!-- Central Greek letter Σ -->
+  <text x="256" y="320"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="220"
+        font-weight="bold"
+        fill="#FFFFFF"
+        text-anchor="middle"
+        letter-spacing="-10">Σ</text>
+
+  <!-- Curved text: Σφραγίς following the circle -->
+  <text font-family="Georgia, 'Times New Roman', serif"
+        font-size="42"
+        font-weight="600"
+        fill="#000000"
+        letter-spacing="8">
+    <textPath href="#textPath" startOffset="50%" text-anchor="middle">
+      Σφραγίς
+    </textPath>
+  </text>
+</svg>

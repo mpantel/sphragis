@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark mode version -->
+  <!-- Fonts: Georgia (system serif font, free with all operating systems) -->
+
+  <defs>
+    <!-- Dark gradient -->
+    <radialGradient id="darkStoneGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#3A3A3A;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#2A2A2A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A1A1A;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- Text path for curved text -->
+    <path id="textPath" d="M 256,470 A 214,214 0 0,1 256,470 A 214,214 0 1,1 256,470" fill="none"/>
+  </defs>
+
+  <!-- Simple outer circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#darkStoneGradient)"/>
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#D4AF37" stroke-width="3" opacity="0.6"/>
+
+  <!-- Inner circle -->
+  <circle cx="256" cy="256" r="190" fill="#1A1A1A"/>
+
+  <!-- Central Greek letter Σ -->
+  <text x="256" y="320"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="220"
+        font-weight="bold"
+        fill="#D4AF37"
+        text-anchor="middle"
+        letter-spacing="-10">Σ</text>
+
+  <!-- Curved text: Σφραγίς following the circle -->
+  <text font-family="Georgia, 'Times New Roman', serif"
+        font-size="42"
+        font-weight="600"
+        fill="#D4AF37"
+        letter-spacing="8">
+    <textPath href="#textPath" startOffset="50%" text-anchor="middle">
+      Σφραγίς
+    </textPath>
+  </text>
+</svg>

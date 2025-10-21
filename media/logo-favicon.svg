@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Favicon version - ultra simple for small sizes -->
+
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#0B3D91"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#D4AF37" stroke-width="2"/>
+
+  <!-- Greek letter Σ -->
+  <text x="32" y="45"
+        font-family="Georgia, serif"
+        font-size="42"
+        font-weight="bold"
+        fill="#F8F8FF"
+        text-anchor="middle">Σ</text>
+</svg>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="300" viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Banner version for GitHub README header -->
+  <!-- Fonts: Georgia (system serif font, free with all operating systems) -->
+
+  <defs>
+    <!-- Ancient parchment background -->
+    <linearGradient id="parchment" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F8F8FF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#F0F0F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E8E8ED;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Gradient for golden stone texture -->
+    <radialGradient id="stoneGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#B8941F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B7220;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="300" fill="url(#parchment)"/>
+
+  <!-- Decorative border -->
+  <rect x="10" y="10" width="1180" height="280" fill="none" stroke="#D4AF37" stroke-width="2" opacity="0.3"/>
+  <rect x="20" y="20" width="1160" height="260" fill="none" stroke="#0B3D91" stroke-width="1" opacity="0.2"/>
+
+  <!-- Left logo - main Sphragis logo design -->
+  <g transform="translate(150, 150)">
+    <!-- Outer golden circle -->
+    <circle cx="0" cy="0" r="100" fill="url(#stoneGradient)"/>
+    <circle cx="0" cy="0" r="100" fill="none" stroke="#0B3D91" stroke-width="3"/>
+
+    <!-- Inner blue circle -->
+    <circle cx="0" cy="0" r="80" fill="#0B3D91"/>
+
+    <!-- Central Σ -->
+    <text x="0" y="30"
+          font-family="Georgia, serif"
+          font-size="95"
+          font-weight="bold"
+          fill="#F8F8FF"
+          text-anchor="middle">Σ</text>
+  </g>
+
+  <!-- Main title - Greek only -->
+  <text x="320" y="160"
+        font-family="Georgia, serif"
+        font-size="110"
+        font-weight="bold"
+        fill="#0B3D91"
+        letter-spacing="8">Σφραγίς</text>
+
+  <!-- Subtitle -->
+  <text x="320" y="210"
+        font-family="Georgia, serif"
+        font-size="28"
+        fill="#36454F"
+        letter-spacing="1">Digital PDF Signatures for Rails</text>
+
+  <!-- Bottom decorative line -->
+  <line x1="320" y1="230" x2="950" y2="230" stroke="#D4AF37" stroke-width="1" opacity="0.3"/>
+
+  <!-- Feature badges -->
+  <text x="320" y="260"
+        font-family="Georgia, serif"
+        font-size="18"
+        fill="#36454F"
+        opacity="0.6"
+        letter-spacing="1">🏛️ FREE for Greek Academia  •  🔐 Multi-Provider  •  📜 eIDAS Qualified</text>
+</svg>

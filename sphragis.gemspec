@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
 
   # Runtime dependencies
   spec.add_dependency "prawn", "~> 2.4"
-  spec.add_dependency "rails", ">= 6.1", "< 8.0"
+  spec.add_dependency "rails", ">= 6.1", "< 9.0"
   spec.add_dependency "pdf-reader", "~> 2.0"
 
   # Development dependencies
@@ -46,6 +46,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rubocop-rails", "~> 2.19"
   spec.add_development_dependency "rubocop-minitest", "~> 0.31"
   spec.add_development_dependency "bundler-audit", "~> 0.9"
+  spec.add_development_dependency "brakeman", "~> 6.0"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

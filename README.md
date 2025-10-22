@@ -272,6 +272,9 @@ bundle exec rubocop
 
 # Security audit
 bundle exec bundle-audit check
+
+# Static security analysis
+bundle exec rake brakeman
 ```
 
 ## Documentation
@@ -280,6 +283,7 @@ bundle exec bundle-audit check
 - [FORTIFY_WEBCRYPTO.md](doc/FORTIFY_WEBCRYPTO.md) - Fortify setup guide
 - [LICENSING_SUMMARY.md](doc/LICENSING_SUMMARY.md) - Complete cost breakdown
 - [MULTIPLE_PROVIDERS.md](doc/MULTIPLE_PROVIDERS.md) - Multi-provider usage
+- [DSS_FUTURE.md](doc/DSS_FUTURE.md) - EU Digital Signature Service (future provider)
 - [LOGO.md](doc/LOGO.md) - Logo design and branding
 
 ## Logo & Branding
@@ -310,7 +314,7 @@ See [LOGO.md](doc/LOGO.md) for design details.
 
 **Planned:**
 - 🔄 Production testing and hardening
-- 🔄 Additional provider support
+- 🔄 Additional provider support (DSS for institutional batch signing)
 - 🔄 Batch signing operations
 - 🔄 Signature verification
 - 🔄 Audit logging
@@ -356,7 +360,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 **Sphragis is an independent open-source project.** We are NOT affiliated with, endorsed by, or sponsored by any of the third-party providers, services, or products mentioned in this documentation, including but not limited to:
 
-- Peculiar Ventures (Fortify) • Harica • Yubico (YubiKey) • Nitrokey • ItsMe • OpenSC Project • Any certificate authorities or hardware manufacturers
+- Peculiar Ventures (Fortify) • Harica • Yubico (YubiKey) • Nitrokey • ItsMe • OpenSC Project • EU Digital Signature Service (DSS) • European Commission • Any certificate authorities or hardware manufacturers
 
 All trademarks and product names are property of their respective owners. This gem provides integration code only. Users are responsible for complying with third-party terms of service and any associated costs.
 

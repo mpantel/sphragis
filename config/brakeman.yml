@@ -1,0 +1,43 @@
+# Brakeman configuration for Sphragis
+# https://brakemanscanner.org/docs/options/
+
+# Application path (default: ".")
+app_path: "."
+
+# Rails engine mode
+rails_engines: true
+
+# Output format (can be: text, html, json, markdown, csv, tabs, etc.)
+output_format: text
+
+# Minimum confidence level (1-3, where 1 is low confidence, 3 is high)
+min_confidence: 2
+
+# Exit with error code if warnings are found
+exit_on_warn: false
+
+# Ignore specific warnings by fingerprint
+# Run `brakeman -I` to add warnings to ignore
+# ignore_file: config/brakeman.ignore
+
+# Check specific paths
+# path: .
+
+# Skip certain checks
+# skip_checks:
+#   - SQL
+#   - LinkTo
+
+# Only run certain checks
+# run_checks:
+#   - SQL
+#   - CrossSiteScripting
+
+# Treat all warnings as errors for CI (optional)
+# ensure_latest: true
+
+# Show context around warnings
+# limit: 100
+
+# Rails version (auto-detected from Gemfile.lock)
+# rails_version: 7.0

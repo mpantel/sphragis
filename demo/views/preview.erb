@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Signature - Sphragis Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: white;
+            padding: 30px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .instruction {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .signature-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 20px;
+        }
+
+        .signature-info p {
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .signature-info strong {
+            color: #333;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .pdf-viewer {
+            flex: 1;
+            background: #e0e0e0;
+            overflow: auto;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .pdf-container {
+            position: relative;
+            background: white;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #pdf-canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .signature-box {
+            position: absolute;
+            border: 3px dashed #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            cursor: move;
+            display: none;
+        }
+
+        .signature-box.active {
+            display: block;
+        }
+
+        .signature-label {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background: #667eea;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .resize-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            border: 2px solid white;
+            border-radius: 50%;
+            right: -5px;
+            bottom: -5px;
+            cursor: se-resize;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .page-controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .page-controls button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .page-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔏 Place Your Signature</h1>
+        <p>File: <%= @pdf_filename %></p>
+    </div>
+
+    <div class="main-content">
+        <div class="sidebar">
+            <h2>Signature Placement</h2>
+
+            <div class="instruction">
+                <strong>Instructions:</strong><br>
+                1. Click on the PDF to place signature<br>
+                2. Drag to reposition<br>
+                3. Use resize handle to adjust size<br>
+                4. Click "Sign PDF" when ready
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Signature Provider</label>
+                    <select id="provider">
+                        <option value="">Loading providers...</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Reason for Signing</label>
+                    <input type="text" id="reason" value="Demo signature" placeholder="e.g., Approval">
+                </div>
+
+                <div class="control-group">
+                    <label>Location</label>
+                    <input type="text" id="location" value="Demo App" placeholder="e.g., Athens, Greece">
+                </div>
+
+                <div class="control-group">
+                    <label>Contact</label>
+                    <input type="text" id="contact" value="demo@sphragis.dev" placeholder="e.g., email@example.com">
+                </div>
+            </div>
+
+            <div class="signature-info">
+                <p><strong>Position:</strong> <span id="pos-info">Click on PDF</span></p>
+                <p><strong>Size:</strong> <span id="size-info">-</span></p>
+                <p><strong>Page:</strong> <span id="page-info">1</span></p>
+            </div>
+
+            <button class="btn" id="sign-btn" disabled>Sign PDF</button>
+            <button class="btn btn-secondary" onclick="location.href='/'">Upload Another PDF</button>
+
+            <div class="status" id="status"></div>
+        </div>
+
+        <div class="pdf-viewer">
+            <div>
+                <div class="pdf-container" id="pdf-container">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div class="signature-box" id="signature-box">
+                        <div class="signature-label">Signature</div>
+                        <div class="resize-handle"></div>
+                    </div>
+                </div>
+                <div class="page-controls">
+                    <button id="prev-page">← Previous</button>
+                    <span id="page-num">Page 1</span> / <span id="page-count">1</span>
+                    <button id="next-page">Next →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const pdfUrl = '<%= @pdf_url %>';
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let canvas = document.getElementById('pdf-canvas');
+        let ctx = canvas.getContext('2d');
+        let signatureBox = document.getElementById('signature-box');
+        let signBtn = document.getElementById('sign-btn');
+        let availableProviders = [];
+
+        let signatureData = {
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 60,
+            page: 0
+        };
+
+        let isDragging = false;
+        let isResizing = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let boxStartX = 0;
+        let boxStartY = 0;
+
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+        // Load available providers
+        fetch('/providers')
+            .then(response => response.json())
+            .then(data => {
+                availableProviders = data.providers;
+                const providerSelect = document.getElementById('provider');
+                providerSelect.innerHTML = '';
+
+                data.providers.forEach(provider => {
+                    const option = document.createElement('option');
+                    option.value = provider;
+                    const info = data.info[provider];
+                    option.textContent = info ? `${info.name}` : provider;
+                    option.title = info ? info.description : '';
+                    if (provider === data.default) {
+                        option.selected = true;
+                    }
+                    providerSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading providers:', error);
+                document.getElementById('provider').innerHTML = '<option value="itsme">Itsme (Default)</option>';
+            });
+
+        // Load PDF
+        pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+            pdfDoc = pdf;
+            document.getElementById('page-count').textContent = pdf.numPages;
+            renderPage(pageNum);
+        });
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({ scale: 1.5 });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+
+                page.render(renderContext).promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+
+            document.getElementById('page-num').textContent = 'Page ' + num;
+            document.getElementById('page-info').textContent = num;
+            signatureData.page = num - 1;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        document.getElementById('prev-page').addEventListener('click', function() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        });
+
+        document.getElementById('next-page').addEventListener('click', function() {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+
+        // Place signature on click
+        canvas.addEventListener('click', function(e) {
+            if (isDragging || isResizing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            signatureBox.style.left = x + 'px';
+            signatureBox.style.top = y + 'px';
+            signatureBox.style.width = signatureData.width + 'px';
+            signatureBox.style.height = signatureData.height + 'px';
+            signatureBox.classList.add('active');
+
+            updateSignatureData();
+            signBtn.disabled = false;
+        });
+
+        // Drag signature box
+        signatureBox.addEventListener('mousedown', function(e) {
+            if (e.target.classList.contains('resize-handle')) {
+                isResizing = true;
+                boxStartX = signatureBox.offsetWidth;
+                boxStartY = signatureBox.offsetHeight;
+            } else {
+                isDragging = true;
+                boxStartX = signatureBox.offsetLeft;
+                boxStartY = signatureBox.offsetTop;
+            }
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                const deltaX = e.clientX - dragStartX;
+                const deltaY = e.clientY - dragStartY;
+                signatureBox.style.left = (boxStartX + deltaX) + 'px';
+                signatureBox.style.top = (boxStartY + deltaY) + 'px';
+                updateSignatureData();
+            } else if (isResizing) {
+                const deltaX = e.clientX - dragStartX;
+                const deltaY = e.clientY - dragStartY;
+                const newWidth = Math.max(100, boxStartX + deltaX);
+                const newHeight = Math.max(40, boxStartY + deltaY);
+                signatureBox.style.width = newWidth + 'px';
+                signatureBox.style.height = newHeight + 'px';
+                signatureData.width = newWidth;
+                signatureData.height = newHeight;
+                updateSignatureData();
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+            isResizing = false;
+        });
+
+        function updateSignatureData() {
+            const rect = canvas.getBoundingClientRect();
+            const scale = canvas.width / rect.width;
+
+            signatureData.x = signatureBox.offsetLeft * scale;
+            signatureData.y = (canvas.height - signatureBox.offsetTop - signatureBox.offsetHeight) * scale;
+            signatureData.width = signatureBox.offsetWidth * scale;
+            signatureData.height = signatureBox.offsetHeight * scale;
+
+            document.getElementById('pos-info').textContent =
+                `X: ${Math.round(signatureData.x)}, Y: ${Math.round(signatureData.y)}`;
+            document.getElementById('size-info').textContent =
+                `${Math.round(signatureData.width)} × ${Math.round(signatureData.height)}`;
+        }
+
+        // Sign PDF
+        signBtn.addEventListener('click', function() {
+            signBtn.disabled = true;
+            signBtn.textContent = 'Signing...';
+
+            const formData = new FormData();
+            formData.append('x', signatureData.x);
+            formData.append('y', signatureData.y);
+            formData.append('width', signatureData.width);
+            formData.append('height', signatureData.height);
+            formData.append('page', signatureData.page);
+            formData.append('provider', document.getElementById('provider').value);
+            formData.append('reason', document.getElementById('reason').value);
+            formData.append('location', document.getElementById('location').value);
+            formData.append('contact', document.getElementById('contact').value);
+
+            fetch('/sign', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const status = document.getElementById('status');
+                if (data.success) {
+                    const providerName = document.getElementById('provider').options[document.getElementById('provider').selectedIndex].text;
+                    status.className = 'status success';
+                    status.innerHTML = `<strong>Success!</strong> Your PDF has been signed using ${providerName}.<br>
+                        <a href="${data.download_url}" style="color: #155724; font-weight: bold;">Download Signed PDF</a>`;
+                    signBtn.textContent = 'PDF Signed!';
+                } else {
+                    status.className = 'status error';
+                    status.innerHTML = `<strong>Error:</strong> ${data.error}`;
+                    signBtn.disabled = false;
+                    signBtn.textContent = 'Sign PDF';
+                }
+            })
+            .catch(error => {
+                const status = document.getElementById('status');
+                status.className = 'status error';
+                status.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                signBtn.disabled = false;
+                signBtn.textContent = 'Sign PDF';
+            });
+        });
+    </script>
+</body>
+</html>

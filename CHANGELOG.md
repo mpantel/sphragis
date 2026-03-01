@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.1] - 2026-03-01
+## [0.1.0] - 2026-03-01
 
 ### Added
 - Initial release of Sphragis (Σφραγίς) - Digital PDF Signatures for Rails
@@ -61,8 +61,8 @@ See README.md for details on FREE eIDAS qualified certificates.
 - `Security` - Security fixes and improvements
 - `Documentation` - Documentation changes
 
-[Unreleased]: https://github.com/mpantel/sphragis/compare/v0.0.1...HEAD
-[0.0.1]: https://github.com/mpantel/sphragis/releases/tag/v0.0.1
+[Unreleased]: https://github.com/mpantel/sphragis/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/mpantel/sphragis/releases/tag/v0.1.0
 
 ### Disclaimer
 

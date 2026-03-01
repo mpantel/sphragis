@@ -5,5 +5,5 @@ source "https://rubygems.org"
 gemspec path: ".."
 
 gem "rails", "~> 6.1.7"
-gem "easy_code_sign", path: "../../easy_code_sign"
+gem "easy_code_sign", "~> 0.2"
 gem "irb"

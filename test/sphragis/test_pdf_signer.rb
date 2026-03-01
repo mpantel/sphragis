@@ -99,15 +99,10 @@ module Sphragis
       assert File.exist?(signed_path)
       assert_match(/_signed\.pdf$/, signed_path)
 
-      # Check that signature metadata was created
-      metadata_path = signed_path.sub(/\.pdf$/, "_signature.json")
-      assert File.exist?(metadata_path)
-
-      metadata = JSON.parse(File.read(metadata_path))
-      assert metadata["signature"]
-      assert metadata["certificate"]
-      assert metadata["signed_at"]
-      assert metadata["signature_options"]
+      require "easy_code_sign"
+      sig = EasyCodeSign::Signable::PdfFile.new(signed_path).extract_signature
+      assert sig, "Expected signed PDF to contain a cryptographic signature"
+      assert sig[:contents], "Expected signature contents to be present"
     end
 
     def test_sign_with_custom_options
@@ -124,13 +119,11 @@ module Sphragis
       signer = PdfSigner.new(@pdf_path, options)
       signed_path = signer.sign
 
-      metadata_path = signed_path.sub(/\.pdf$/, "_signature.json")
-      metadata = JSON.parse(File.read(metadata_path))
+      assert File.exist?(signed_path)
 
-      assert_equal 50, metadata["signature_options"]["x"]
-      assert_equal 50, metadata["signature_options"]["y"]
-      assert_equal "Approval", metadata["signature_options"]["reason"]
-      assert_equal "Athens, Greece", metadata["signature_options"]["location"]
+      require "easy_code_sign"
+      sig = EasyCodeSign::Signable::PdfFile.new(signed_path).extract_signature
+      assert sig, "Expected signed PDF to contain a cryptographic signature"
     end
 
     def test_sign_disconnects_provider_on_error

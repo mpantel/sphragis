@@ -21,6 +21,7 @@ class Minitest::Test
     # Clean up any test files
     Dir.glob(File.join(@fixtures_path, "*_signed.pdf")).each { |f| FileUtils.rm_f(f) }
     Dir.glob(File.join(@fixtures_path, "*_signature.json")).each { |f| FileUtils.rm_f(f) }
+    Dir.glob(File.join(@fixtures_path, "*_prepared.pdf")).each { |f| FileUtils.rm_f(f) }
   end
 
   def create_test_pdf(filename = "test.pdf")

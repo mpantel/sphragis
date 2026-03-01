@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "base_provider"
+require "base64"
 require "net/http"
 require "uri"
 require "json"
@@ -66,6 +67,11 @@ module Sphragis
           provider_id: @provider_id,
           fortify_url: @config[:api_url]
         }
+
+        # Cache signing certificate for x509_certificate (requires @session to be set)
+        cert_id = @config[:certificate_id] || find_signing_certificate
+        @x509_cert = fetch_x509_cert(cert_id)
+
         true
       rescue StandardError => e
         raise ProviderError, "Failed to connect to Fortify: #{e.message}"
@@ -119,6 +125,22 @@ module Sphragis
 
       def validate_configuration!
         raise ProviderError, "Token PIN not configured" if @config[:token_pin].nil?
+      end
+
+      def sign_bytes(data)
+        raise ProviderError, "Not connected to Fortify" unless connected?
+
+        cert_id = @config[:certificate_id] || find_signing_certificate
+        result = sign_with_webcrypto(cert_id, data)
+        Base64.strict_decode64(result[:signature])
+      rescue StandardError => e
+        raise ProviderError, "Failed to sign bytes with Fortify: #{e.message}"
+      end
+
+      def x509_certificate
+        raise ProviderError, "Not connected to Fortify" unless connected?
+
+        @x509_cert
       end
 
       # Check if Fortify app is running
@@ -224,6 +246,14 @@ module Sphragis
           algorithm: "SHA256withRSA",
           signature: result["signature"]
         }
+      end
+
+      def fetch_x509_cert(cert_id)
+        cert_data = make_request(
+          :get,
+          "/providers/#{@session[:provider_id]}/certificates/#{cert_id}"
+        )
+        OpenSSL::X509::Certificate.new(Base64.decode64(cert_data["value"]))
       end
 
       def get_certificate_info(cert_id)

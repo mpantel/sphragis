@@ -2,6 +2,7 @@
 
 require_relative "base_provider"
 require "digest"
+require "openssl"
 require "time"
 require "json"
 
@@ -37,6 +38,10 @@ module Sphragis
         # Authenticate with Itsme API
         # In a real implementation, this would use OAuth2 flow
         response = authenticate_with_itsme
+
+        # Generate a self-signed cert simulating a token certificate
+        @private_key = OpenSSL::PKey::RSA.generate(2048)
+        @signing_cert = build_self_signed_cert
 
         @session = {
           connected: true,
@@ -86,6 +91,19 @@ module Sphragis
         raise ProviderError, "User email not configured" if @config[:user_email].nil?
       end
 
+      def sign_bytes(hash)
+        raise ProviderError, "Not connected to Itsme" unless connected?
+
+        # hash is the SHA256 digest of the CMS signed attributes DER
+        @private_key.sign_raw("SHA256", hash)
+      end
+
+      def x509_certificate
+        raise ProviderError, "Not connected to Itsme" unless connected?
+
+        @signing_cert
+      end
+
       # Initiate signing with user interaction
       # @param data [String] Data to sign
       # @return [Hash] Signing session information
@@ -112,6 +130,19 @@ module Sphragis
       end
 
       private
+
+      def build_self_signed_cert
+        cert = OpenSSL::X509::Certificate.new
+        cert.version = 2
+        cert.serial = OpenSSL::BN.rand(64)
+        cert.subject = OpenSSL::X509::Name.parse("CN=#{@config[:user_email]}, O=Itsme User")
+        cert.issuer = cert.subject
+        cert.public_key = @private_key.public_key
+        cert.not_before = Time.now
+        cert.not_after = Time.now + 365 * 24 * 60 * 60
+        cert.sign(@private_key, OpenSSL::Digest::SHA256.new)
+        cert
+      end
 
       def authenticate_with_itsme
         # Simulated OAuth2 authentication

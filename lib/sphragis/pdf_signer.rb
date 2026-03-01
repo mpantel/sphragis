@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "pdf-reader"
-require "json"
 
 module Sphragis
   class PdfSigner
@@ -50,16 +49,19 @@ module Sphragis
 
       @provider.connect
 
-      # Pass raw PDF bytes to the provider. Cloud providers (Harica) send the
-      # full PDF to their API; hardware-token providers hash the content locally.
-      signature = @provider.sign(File.binread(pdf_path))
+      output_path = pdf_path.sub(/\.pdf$/i, "_signed.pdf")
 
-      # Create signed PDF
-      signed_pdf_path = create_signed_pdf(signature)
+      if @provider.respond_to?(:sign_bytes)
+        sign_locally(output_path)
+      else
+        # Cloud provider (e.g. Harica) returns a fully signed PDF.
+        signature = @provider.sign(File.binread(pdf_path))
+        File.binwrite(output_path, signature[:signed_pdf_bytes])
+      end
 
       @provider.disconnect
 
-      signed_pdf_path
+      output_path
     rescue StandardError => e
       @provider&.disconnect
       raise SigningError, "Failed to sign PDF: #{e.message}"
@@ -111,37 +113,28 @@ module Sphragis
       raise SigningError, "Invalid PDF file: #{e.message}"
     end
 
-    def create_signed_pdf(signature)
-      output_path = pdf_path.sub(/\.pdf$/i, "_signed.pdf")
-
-      if signature[:signed_pdf_bytes]
-        # Cloud provider (e.g. Harica) returned a fully signed PDF — write it directly.
-        File.binwrite(output_path, signature[:signed_pdf_bytes])
-      else
-        # Local/simulated provider: copy original PDF and write a JSON sidecar.
-        create_signed_pdf_with_prawn(output_path, signature)
-      end
-
-      output_path
+    def sign_locally(output_path)
+      require "easy_code_sign"
+      cert = @provider.x509_certificate
+      page = signature_options[:page] || pdf_info[:page_count]
+      pdf_file = EasyCodeSign::Signable::PdfFile.new(
+        pdf_path,
+        output_path: output_path,
+        visible_signature: true,
+        signature_rect: build_signature_rect,
+        signature_page: page,
+        signature_reason: signature_options[:reason],
+        signature_location: signature_options[:location],
+        signature_contact: signature_options[:contact_info]
+      )
+      # The lambda receives SHA256(signed_attrs_DER) — sign_bytes must return raw RSA bytes.
+      pdf_file.apply_signature(->(hash) { @provider.sign_bytes(hash) }, [cert])
     end
 
-    def create_signed_pdf_with_prawn(output_path, signature)
-      # Copy original PDF and add signature annotation
-      FileUtils.cp(pdf_path, output_path)
-
-      # In production, this would embed the actual signature into the PDF
-      # using proper PDF signing standards (ISO 32000)
-
-      # Add signature metadata to a separate file for demonstration
-      require "time"
-      metadata_path = output_path.sub(/\.pdf$/i, "_signature.json")
-      File.write(metadata_path, JSON.pretty_generate({
-        signature: signature,
-        certificate: @provider.certificate,
-        provider: @provider.provider_name,
-        signed_at: Time.now.utc.iso8601,
-        signature_options: signature_options
-      }))
+    def build_signature_rect
+      x = signature_options[:x]
+      y = signature_options[:y]
+      [x, y, x + signature_options[:width], y + signature_options[:height]]
     end
   end
 end

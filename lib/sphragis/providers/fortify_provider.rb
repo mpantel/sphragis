@@ -2,6 +2,7 @@
 
 require_relative "base_provider"
 require "digest"
+require "openssl"
 require "time"
 
 module Sphragis
@@ -26,8 +27,11 @@ module Sphragis
       def connect
         validate_configuration!
 
+        # Generate a self-signed cert simulating a token certificate
+        @private_key = OpenSSL::PKey::RSA.generate(2048)
+        @signing_cert = build_self_signed_cert
+
         # In a real implementation, this would use FFI to connect to Fortify
-        # For now, we'll simulate the connection
         @session = {
           connected: true,
           slot: @config[:token_slot],
@@ -62,6 +66,19 @@ module Sphragis
         simulate_certificate
       end
 
+      def sign_bytes(hash)
+        raise ProviderError, "Not connected to Fortify token" unless connected?
+
+        # hash is the SHA256 digest of the CMS signed attributes DER
+        @private_key.sign_raw("SHA256", hash)
+      end
+
+      def x509_certificate
+        raise ProviderError, "Not connected to Fortify token" unless connected?
+
+        @signing_cert
+      end
+
       def validate_configuration!
         raise ProviderError, "Fortify library path not configured" if @config[:library_path].nil?
         raise ProviderError, "Token PIN not configured" if @config[:token_pin].nil?
@@ -77,6 +94,20 @@ module Sphragis
           timestamp: Time.now.utc.iso8601,
           token_slot: @config[:token_slot]
         }
+      end
+
+      def build_self_signed_cert
+        cert = OpenSSL::X509::Certificate.new
+        cert.version = 2
+        cert.serial = OpenSSL::BN.rand(64)
+        label = @config[:certificate_label] || "Sphragis Fortify"
+        cert.subject = OpenSSL::X509::Name.parse("CN=#{label}")
+        cert.issuer = cert.subject
+        cert.public_key = @private_key.public_key
+        cert.not_before = Time.now
+        cert.not_after = Time.now + 365 * 24 * 60 * 60
+        cert.sign(@private_key, OpenSSL::Digest::SHA256.new)
+        cert
       end
 
       def simulate_certificate

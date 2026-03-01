@@ -3,7 +3,7 @@ PATH
   specs:
     sphragis (0.0.1)
       pdf-reader (~> 2.0)
-      prawn (~> 2.4)
+      prawn (~> 2.5)
       rails (>= 6.1, < 9.0)
 
 GEM

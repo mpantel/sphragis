@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   # Runtime dependencies
   spec.add_dependency "rails", ">= 6.1", "< 9.0"
   spec.add_dependency "pdf-reader", "~> 2.0"
-  spec.add_dependency "easy_code_sign", "~> 0.2"
+  spec.add_dependency "easy_code_sign", ">= 0.2"
 
   # Development dependencies
   spec.add_development_dependency "prawn", "~> 2.5"

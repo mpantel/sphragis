@@ -7,18 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-03-01
+
 ### Added
 - Initial release of Sphragis (Σφραγίς) - Digital PDF Signatures for Rails
 - Multi-provider architecture supporting:
   - Fortify WebCrypto (FREE open-source, hardware tokens)
   - Harica (FREE for Greek academic institutions, eIDAS qualified)
   - Itsme (template for free e-signature services)
+- **ISO 32000-compliant PDF signing** via easy_code_sign native backend
+  - Real CMS/PKCS#7 signatures embedded in PDF (adbe.pkcs7.detached)
+  - Harica cloud path: full-document signing via rsign-api.harica.gr DSA API
+  - Local path (Fortify, Itsme): sign_bytes(hash) callback → NativeSigner embeds CMS
+  - Fully MIT-licensed dependency chain — no AGPL (HexaPDF) required
 - Rails Engine with interactive PDF signature placement
 - PDF.js-based viewer with drag-and-drop signature positioning
 - Provider factory pattern for easy extension
 - Configuration system with environment variable support
-- Comprehensive documentation suite
-- Logo design inspired by ancient Greek σφραγιδόλιθοι (sealstones)
+- CI matrix: Rails 6.1, 7.2, 8.0, 8.1
 - Complete test suite (Minitest)
 - RuboCop code quality checks
 - Bundler-audit security scanning
@@ -29,8 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FORTIFY_WEBCRYPTO.md for Fortify setup
 - LICENSING_SUMMARY.md for cost breakdown
 - MULTIPLE_PROVIDERS.md for multi-provider usage
-- LOGO.md for branding guidelines
-- LOGO_FILES.md for logo assets reference
 
 ## Notes
 
@@ -56,6 +60,9 @@ See README.md for details on FREE eIDAS qualified certificates.
 - `Fixed` - Bug fixes
 - `Security` - Security fixes and improvements
 - `Documentation` - Documentation changes
+
+[Unreleased]: https://github.com/mpantel/sphragis/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/mpantel/sphragis/releases/tag/v0.0.1
 
 ### Disclaimer
 

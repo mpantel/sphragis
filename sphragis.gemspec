@@ -33,11 +33,11 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Runtime dependencies
-  spec.add_dependency "prawn", "~> 2.5"
   spec.add_dependency "rails", ">= 6.1", "< 9.0"
   spec.add_dependency "pdf-reader", "~> 2.0"
 
   # Development dependencies
+  spec.add_development_dependency "prawn", "~> 2.5"
   spec.add_development_dependency "minitest", "~> 5.0"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "mocha", "~> 2.0"

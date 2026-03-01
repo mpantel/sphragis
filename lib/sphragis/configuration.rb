@@ -8,8 +8,7 @@ module Sphragis
     attr_accessor :fortify_library_path, :token_pin, :token_slot, :certificate_label
 
     # Harica configuration
-    attr_accessor :harica_api_key, :harica_certificate_id, :harica_username,
-                  :harica_password, :harica_environment
+    attr_accessor :harica_username, :harica_password, :harica_environment
 
     # Itsme configuration
     attr_accessor :itsme_client_id, :itsme_client_secret, :itsme_user_email,
@@ -26,8 +25,6 @@ module Sphragis
       @certificate_label = ENV.fetch("FORTIFY_CERTIFICATE_LABEL", "Signing Certificate")
 
       # Harica configuration
-      @harica_api_key = ENV["HARICA_API_KEY"]
-      @harica_certificate_id = ENV["HARICA_CERTIFICATE_ID"]
       @harica_username = ENV["HARICA_USERNAME"]
       @harica_password = ENV["HARICA_PASSWORD"]
       @harica_environment = ENV.fetch("HARICA_ENVIRONMENT", "production")
@@ -56,7 +53,7 @@ module Sphragis
 
     # Check if Harica is configured
     def harica_configured?
-      !harica_api_key.nil? && !harica_certificate_id.nil? && !harica_username.nil?
+      !harica_username.nil? && !harica_password.nil?
     end
 
     # Check if Itsme is configured

@@ -25,9 +25,21 @@ module Sphragis
       @pdf_path = pdf_path
       @signature_options = default_signature_options.merge(signature_options)
 
-      # Create provider based on options or use default
-      provider_name = @signature_options.delete(:provider) || ProviderFactory.default_provider
-      @provider = ProviderFactory.create(provider_name)
+      # Create provider based on options or use default.
+      # OTP and placement params are forwarded to the provider so that
+      # cloud providers (e.g. Harica) receive everything they need at sign time.
+      provider_name  = @signature_options.delete(:provider) || ProviderFactory.default_provider
+      provider_extra = {
+        otp:      @signature_options.delete(:otp),
+        x:        @signature_options[:x],
+        y:        @signature_options[:y],
+        width:    @signature_options[:width],
+        height:   @signature_options[:height],
+        page:     @signature_options[:page],
+        reason:   @signature_options[:reason],
+        location: @signature_options[:location]
+      }.compact
+      @provider = ProviderFactory.create(provider_name, provider_extra)
 
       validate_pdf!
     end
@@ -39,14 +51,9 @@ module Sphragis
 
       @provider.connect
 
-      # Read the PDF content
-      pdf_content = File.binread(pdf_path)
-
-      # Create signature data
-      signature_data = create_signature_data(pdf_content)
-
-      # Sign with provider
-      signature = @provider.sign(signature_data)
+      # Pass raw PDF bytes to the provider. Cloud providers (Harica) send the
+      # full PDF to their API; hardware-token providers hash the content locally.
+      signature = @provider.sign(File.binread(pdf_path))
 
       # Create signed PDF
       signed_pdf_path = create_signed_pdf(signature)
@@ -105,31 +112,16 @@ module Sphragis
       raise SigningError, "Invalid PDF file: #{e.message}"
     end
 
-    def create_signature_data(pdf_content)
-      # In a real implementation, this would create the proper
-      # signature dictionary and byte range for PDF signing
-      require "time"
-      {
-        content_hash: Digest::SHA256.hexdigest(pdf_content),
-        reason: signature_options[:reason],
-        location: signature_options[:location],
-        contact_info: signature_options[:contact_info],
-        timestamp: Time.now.utc.iso8601
-      }.to_json
-    end
-
     def create_signed_pdf(signature)
-      # Generate output path
       output_path = pdf_path.sub(/\.pdf$/i, "_signed.pdf")
 
-      # In a real implementation, this would:
-      # 1. Parse the original PDF
-      # 2. Add the signature dictionary
-      # 3. Add the signature appearance (visual representation)
-      # 4. Write the modified PDF with the signature
-
-      # For now, we'll create a simple version with Prawn
-      create_signed_pdf_with_prawn(output_path, signature)
+      if signature[:signed_pdf_bytes]
+        # Cloud provider (e.g. Harica) returned a fully signed PDF — write it directly.
+        File.binwrite(output_path, signature[:signed_pdf_bytes])
+      else
+        # Local/simulated provider: copy original PDF and write a JSON sidecar.
+        create_signed_pdf_with_prawn(output_path, signature)
+      end
 
       output_path
     end

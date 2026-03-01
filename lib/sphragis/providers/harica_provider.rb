@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "base_provider"
-require "digest"
-require "time"
+require "base64"
 require "net/http"
 require "uri"
 require "json"
@@ -10,148 +9,150 @@ require "json"
 module Sphragis
   module Providers
     # Harica (Hellenic Academic and Research Institutions CA) Provider
-    # Harica provides free digital certificates for academic institutions in Greece
-    # and paid certificates for commercial use.
+    #
+    # Uses Harica's remote document signing API (rsign-api.harica.gr).
+    # The API is a full-document cloud signer: you POST the PDF, Harica signs
+    # it server-side and returns the complete signed PDF. No local key material
+    # is needed. Authentication is per-request via username + password + OTP.
+    #
+    # OTP must be supplied per signing call (it rotates every ~30 s).
+    # Pass it via PdfSigner options: PdfSigner.new(path, otp: "123456", provider: :harica)
     #
     # @see https://www.harica.gr
     class HaricaProvider < BaseProvider
-      HARICA_API_BASE = "https://api.harica.gr/v1"
+      PRODUCTION_URL = "https://rsign-api.harica.gr/dsa/v1/sign"
+      SANDBOX_URL    = "https://rsign-api-dev.harica.gr/dsa/v1/sign"
 
-      # Initialize Harica provider
-      # @param config [Hash] Configuration options
-      #   - api_key: Harica API key
-      #   - certificate_id: Certificate identifier
-      #   - username: Harica username
-      #   - password: Harica password (for authentication)
-      #   - environment: 'production' or 'sandbox' (default: 'production')
       def initialize(config = {})
         super
         @config = {
-          api_key: config[:api_key],
-          certificate_id: config[:certificate_id],
-          username: config[:username],
-          password: config[:password],
-          environment: config[:environment] || "production"
+          username:            config[:username],
+          password:            config[:password],
+          otp:                 config[:otp],
+          environment:         config[:environment] || "production",
+          x:                   config[:x]      || 140,
+          y:                   config[:y]      || 230,
+          width:               config[:width]  || 150,
+          height:              config[:height] || 100,
+          page:                config[:page],    # nil → send -1 (all pages) to Harica
+          reason:              config[:reason]  || "",
+          graphical_signature: config[:graphical_signature] || ""
         }
-        @api_base = @config[:environment] == "sandbox" ? "#{HARICA_API_BASE}/sandbox" : HARICA_API_BASE
       end
 
+      # Validate credentials are present. The Harica API is stateless —
+      # no persistent session is opened here.
       def connect
         validate_configuration!
-
-        # Authenticate with Harica API
-        # In a real implementation, this would call the Harica authentication endpoint
-        response = authenticate_with_harica
-
-        @session = {
-          connected: true,
-          provider: "harica",
-          access_token: response[:access_token],
-          token_expires_at: Time.now + 3600,
-          certificate_id: @config[:certificate_id]
-        }
+        @session = { connected: true, provider: "harica" }
         true
       rescue StandardError => e
         raise ProviderError, "Failed to connect to Harica: #{e.message}"
       end
 
       def disconnect
-        # Revoke session if needed
-        # In a real implementation, call Harica logout endpoint
         @session = nil
         true
       end
 
-      def sign(data)
+      # Sign a PDF document via Harica's remote signing API.
+      #
+      # @param pdf_bytes [String] raw binary content of the PDF file
+      # @return [Hash] result hash; :signed_pdf_bytes contains the signed PDF
+      def sign(pdf_bytes)
         raise ProviderError, "Not connected to Harica" unless connected?
 
-        # Check if token is still valid
-        refresh_token_if_needed
-
-        # In a real implementation, this would:
-        # 1. Send data to Harica signing endpoint
-        # 2. Use the certificate_id to identify which certificate to use
-        # 3. Return the signed data with Harica's signature
-
-        simulate_harica_signing(data)
+        payload  = build_payload(pdf_bytes)
+        response = post_to_harica(payload)
+        parse_response(response)
+      rescue ProviderError
+        raise
       rescue StandardError => e
         raise ProviderError, "Failed to sign with Harica: #{e.message}"
       end
 
+      # Harica's DSA API does not expose a certificate endpoint; return
+      # descriptive metadata derived from the configured username instead.
       def certificate
         raise ProviderError, "Not connected to Harica" unless connected?
 
-        # In a real implementation, fetch certificate details from Harica API
-        simulate_harica_certificate
+        {
+          provider:         "harica",
+          subject:          "CN=#{@config[:username]}, O=Harica User",
+          issuer:           "CN=HARICA TLS RSA Root CA 2021, O=Hellenic Academic and Research Institutions CA",
+          key_usage:        ["digitalSignature", "nonRepudiation"],
+          certificate_type: "qualified"
+        }
       end
 
       def validate_configuration!
-        raise ProviderError, "Harica API key not configured" if @config[:api_key].nil?
-        raise ProviderError, "Harica certificate ID not configured" if @config[:certificate_id].nil?
         raise ProviderError, "Harica username not configured" if @config[:username].nil?
-      end
-
-      # Check if Harica service is available
-      # @return [Boolean]
-      def service_available?
-        # In production, this would ping Harica's health endpoint
-        true
+        raise ProviderError, "Harica password not configured" if @config[:password].nil?
+        raise ProviderError, "Harica OTP not provided" if @config[:otp].nil?
       end
 
       private
 
-      def authenticate_with_harica
-        # Simulated authentication
-        # In real implementation:
-        # POST #{@api_base}/auth/login
-        # Body: { username: @config[:username], password: @config[:password], api_key: @config[:api_key] }
+      def api_url
+        @config[:environment] == "sandbox" ? SANDBOX_URL : PRODUCTION_URL
+      end
 
+      # Harica uses -1 to sign all pages; otherwise a 1-based page number.
+      def harica_page
+        @config[:page].nil? ? -1 : @config[:page]
+      end
+
+      def build_payload(pdf_bytes)
         {
-          access_token: "harica_token_#{Digest::SHA256.hexdigest(@config[:username])}",
-          refresh_token: "harica_refresh_#{Digest::SHA256.hexdigest(@config[:username])}",
-          expires_in: 3600
+          "Username"           => @config[:username],
+          "Password"           => @config[:password],
+          "SignPassword"       => @config[:otp],
+          "FileData"           => Base64.encode64(pdf_bytes),
+          "Reason"             => @config[:reason],
+          "Title"              => "",
+          "FileType"           => "pdf",
+          "Page"               => harica_page,
+          "Width"              => @config[:width],
+          "Height"             => @config[:height],
+          "X"                  => @config[:x],
+          "Y"                  => @config[:y],
+          "Appearance"         => 15,
+          "GraphicalSignature" => @config[:graphical_signature]
         }
       end
 
-      def refresh_token_if_needed
-        return unless @session[:token_expires_at] < Time.now + 300 # Refresh if expires in 5 min
+      def post_to_harica(payload)
+        uri  = URI.parse(api_url)
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl      = uri.scheme == "https"
+        http.read_timeout = 30
+        http.open_timeout = 10
 
-        # Refresh the token
-        # In real implementation: POST #{@api_base}/auth/refresh
-        @session[:access_token] = "refreshed_token_#{Time.now.to_i}"
-        @session[:token_expires_at] = Time.now + 3600
+        request = Net::HTTP::Post.new(uri.path, "Content-Type" => "application/json")
+        request.body = payload.to_json
+        http.request(request)
+      rescue Net::OpenTimeout, Net::ReadTimeout => e
+        raise ProviderError, "Harica API request timed out: #{e.message}"
       end
 
-      def simulate_harica_signing(data)
-        # Real implementation would POST to:
-        # #{@api_base}/certificates/#{@config[:certificate_id]}/sign
-        # Headers: { Authorization: "Bearer #{@session[:access_token]}" }
-        # Body: { data: Base64.encode64(data), algorithm: "SHA256withRSA" }
+      def parse_response(http_response)
+        unless http_response.is_a?(Net::HTTPSuccess)
+          raise ProviderError, "Harica API returned HTTP #{http_response.code}: #{http_response.message}"
+        end
 
+        body = JSON.parse(http_response.body)
+        unless body["Success"]
+          error_msg = body["Message"] || body["Error"] || "Unknown error"
+          raise ProviderError, "Harica signing failed: #{error_msg}"
+        end
+
+        signed_pdf_bytes = Base64.decode64(body["Data"]["SignedFileData"])
         {
-          provider: "harica",
-          algorithm: "SHA256withRSA",
-          signature: Digest::SHA256.hexdigest("harica_#{data}#{@config[:certificate_id]}"),
-          timestamp: Time.now.utc.iso8601,
-          certificate_id: @config[:certificate_id],
-          signature_format: "CAdES-BES", # CAdES Basic Electronic Signature
-          signing_time: Time.now.utc.iso8601
-        }
-      end
-
-      def simulate_harica_certificate
-        # Real implementation would GET:
-        # #{@api_base}/certificates/#{@config[:certificate_id]}
-
-        {
-          provider: "harica",
-          subject: "CN=#{@config[:username]}, O=Harica User",
-          issuer: "CN=HARICA TLS RSA Root CA 2021, O=Hellenic Academic and Research Institutions CA",
-          serial: @config[:certificate_id],
-          not_before: Time.now - 365 * 24 * 60 * 60,
-          not_after: Time.now + 365 * 24 * 60 * 60,
-          key_usage: ["digitalSignature", "nonRepudiation"],
-          certificate_type: "qualified" # Qualified Electronic Signature
+          provider:         "harica",
+          algorithm:        "SHA256withRSA",
+          signature_format: "CAdES",
+          signed_pdf_bytes: signed_pdf_bytes,
+          signed_at:        Time.now.utc.iso8601
         }
       end
     end

@@ -24,7 +24,7 @@ module Sphragis
         raise ProviderNotConfiguredError, "Harica is not configured" unless config_obj.harica_configured?
 
         require_relative "providers/harica_provider"
-        Providers::HaricaProvider.new(config.empty? ? harica_config : config)
+        Providers::HaricaProvider.new(harica_config.merge(config))
 
       when :itsme
         raise ProviderNotConfiguredError, "Itsme is not configured" unless config_obj.itsme_configured?
@@ -60,10 +60,8 @@ module Sphragis
     def self.harica_config
       config = Sphragis.configuration
       {
-        api_key: config.harica_api_key,
-        certificate_id: config.harica_certificate_id,
-        username: config.harica_username,
-        password: config.harica_password,
+        username:    config.harica_username,
+        password:    config.harica_password,
         environment: config.harica_environment
       }
     end

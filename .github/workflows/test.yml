@@ -20,6 +20,12 @@ jobs:
           - ruby: "3.2"
             gemfile: gemfiles/rails_72.gemfile
             rails: "7.2"
+          - ruby: "3.2"
+            gemfile: gemfiles/rails_80.gemfile
+            rails: "8.0"
+          - ruby: "3.2"
+            gemfile: gemfiles/rails_81.gemfile
+            rails: "8.1"
 
     env:
       BUNDLE_GEMFILE: ${{ matrix.gemfile }}
